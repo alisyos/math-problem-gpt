@@ -81,8 +81,3 @@ app.listen(port, () => {
     console.log('style.css 존재:', fs.existsSync(path.join(publicPath, 'style.css')));
     console.log('script.js 존재:', fs.existsSync(path.join(publicPath, 'script.js')));
 });
-    
-    // 파일 존재 여부 확인
-    const files = fs.readdirSync(publicPath);
-    console.log('public 폴더 내용:', files);
-});
