@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const uploadButton = document.getElementById('upload-button');
 
-    // API URL을 Render.com URL로 수정
+    // API URL 설정
     const API_URL = 'https://math-problem-gpt-web.onrender.com';
 
     // 메시지 표시 함수
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadButton.addEventListener('click', uploadFile);
 
     // 서버 연결 테스트
-    fetch(`${API_URL}/test`)
+    fetch(`${API_URL}/api/test`)
         .then(response => response.json())
         .then(data => {
             console.log('서버 테스트 성공:', data);
