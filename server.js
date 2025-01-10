@@ -15,7 +15,9 @@ const openai = new OpenAI({
 // 미들웨어
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 정적 파일 제공
+app.use('/', express.static(path.join(__dirname, 'public')));
 
 // API 라우트
 app.get('/api/test', (req, res) => {
@@ -55,13 +57,16 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// 모든 요청을 index.html로 라우팅
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
+    console.log('정적 파일 경로:', path.join(__dirname, 'public'));
     console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? '설정됨' : '설정되지 않음');
+    
+    // 파일 존재 여부 확인
+    const files = ['index.html', 'style.css', 'script.js'].map(file => {
+        const filePath = path.join(__dirname, 'public', file);
+        return `${file}: ${require('fs').existsSync(filePath)}`;
+    });
+    console.log('파일 확인:', files);
 });
