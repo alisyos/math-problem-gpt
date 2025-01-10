@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const OpenAI = require('openai');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -16,12 +17,28 @@ const openai = new OpenAI({
 app.use(cors());
 app.use(express.json());
 
-// 정적 파일 제공
-app.use('/', express.static(path.join(__dirname, 'public')));
+// 정적 파일 경로 설정
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
-// API 라우트
+// 기본 라우트
+app.get('/', (req, res) => {
+    const indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('index.html not found');
+    }
+});
+
+// API 테스트 라우트
 app.get('/api/test', (req, res) => {
-    res.json({ message: '서버가 정상적으로 동작 중입니다.' });
+    const files = fs.readdirSync(publicPath);
+    res.json({ 
+        message: '서버가 정상적으로 동작 중입니다.',
+        files: files,
+        publicPath: publicPath
+    });
 });
 
 // 채팅 API
@@ -60,13 +77,9 @@ app.post('/api/chat', async (req, res) => {
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
-    console.log('정적 파일 경로:', path.join(__dirname, 'public'));
-    console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? '설정됨' : '설정되지 않음');
+    console.log('정적 파일 경로:', publicPath);
     
     // 파일 존재 여부 확인
-    const files = ['index.html', 'style.css', 'script.js'].map(file => {
-        const filePath = path.join(__dirname, 'public', file);
-        return `${file}: ${require('fs').existsSync(filePath)}`;
-    });
-    console.log('파일 확인:', files);
+    const files = fs.readdirSync(publicPath);
+    console.log('public 폴더 내용:', files);
 });
