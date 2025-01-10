@@ -4,12 +4,14 @@ const cors = require("cors");
 const OpenAI = require("openai");
 const multer = require("multer");
 const fs = require("fs");
+const path = require('path');
 
 const app = express();
 
 // 미들웨어 설정
 app.use(cors());
 app.use(express.json());
+app.use(express.static('.')); // 현재 디렉토리의 정적 파일 제공
 
 // OpenAI 설정
 const openai = new OpenAI({
@@ -27,18 +29,25 @@ app.get('/test', (req, res) => {
 
 // 파일 업로드 설정
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        if (!fs.existsSync('uploads')) {
-            fs.mkdirSync('uploads');
-        }
+    destination: function (req, file, cb) {
         cb(null, 'uploads/');
     },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
     }
 });
 
 const upload = multer({ storage: storage });
+
+// uploads 폴더가 없으면 생성
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
+// 루트 경로 처리
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // 파일 업로드 라우트
 app.post('/api/upload', upload.single('file'), async (req, res) => {
@@ -155,7 +164,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // 서버 시작
-const PORT = 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
     console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? '설정됨' : '설정되지 않음');
