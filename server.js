@@ -17,28 +17,19 @@ const openai = new OpenAI({
 app.use(cors());
 app.use(express.json());
 
-// 정적 파일 경로 설정
-const publicPath = path.join(__dirname, 'public');
+// 정적 파일 제공
+app.use(express.static('public'));
 
-// API 라우트
+// API 테스트
 app.get('/api/test', (req, res) => {
-    try {
-        const files = fs.readdirSync(publicPath);
-        const indexExists = fs.existsSync(path.join(publicPath, 'index.html'));
-        res.json({ 
-            message: '서버가 정상적으로 동작 중입니다.',
-            publicPath: publicPath,
-            files: files,
-            indexExists: indexExists,
-            currentDir: __dirname,
-            fullIndexPath: path.join(publicPath, 'index.html')
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message,
-            stack: error.stack
-        });
-    }
+    const publicFiles = fs.readdirSync('public');
+    const srcFiles = fs.readdirSync('src');
+    res.json({ 
+        message: '서버가 정상적으로 동작 중입니다.',
+        publicFiles,
+        srcFiles,
+        cwd: process.cwd()
+    });
 });
 
 // 채팅 API
@@ -72,31 +63,15 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// 정적 파일 제공
-app.use('/', express.static(publicPath));
-
-// 기본 라우트
-app.get('/', (req, res) => {
-    try {
-        if (fs.existsSync(path.join(publicPath, 'index.html'))) {
-            res.sendFile(path.join(publicPath, 'index.html'));
-        } else {
-            res.status(404).send('index.html not found');
-        }
-    } catch (error) {
-        res.status(500).send(`Error: ${error.message}`);
-    }
+// 모든 요청을 index.html로 라우팅
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
-    console.log('정적 파일 경로:', publicPath);
-    try {
-        const files = fs.readdirSync(publicPath);
-        console.log('파일 목록:', files);
-        console.log('index.html 존재:', fs.existsSync(path.join(publicPath, 'index.html')));
-    } catch (error) {
-        console.error('파일 시스템 에러:', error);
-    }
+    console.log('작업 디렉토리:', process.cwd());
+    console.log('public 파일:', fs.readdirSync('public'));
+    console.log('src 파일:', fs.readdirSync('src'));
 });
