@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const uploadButton = document.getElementById('upload-button');
 
-    // API URL 설정
-    const API_URL = 'https://math-problem-gpt-web.onrender.com';
+    // API URL 설정 (현재 도메인 사용)
+    const API_URL = '';  // 빈 문자열로 설정하여 상대 경로 사용
 
     // 메시지 표시 함수
     const appendMessage = (content, isUser) => {
