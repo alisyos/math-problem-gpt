@@ -16,15 +16,15 @@ const openai = new OpenAI({
 app.use(cors());
 app.use(express.json());
 
-// 정적 파일 제공
-app.use('/', express.static(path.join(__dirname, 'public')));
+// 정적 파일 경로 설정
+const publicPath = path.join(__dirname, 'public');
 
 // API 라우트
 app.get('/api/test', (req, res) => {
     res.json({ 
         message: '서버가 정상적으로 동작 중입니다.',
-        publicPath: path.join(__dirname, 'public'),
-        files: require('fs').readdirSync(path.join(__dirname, 'public'))
+        publicPath: publicPath,
+        files: require('fs').readdirSync(publicPath)
     });
 });
 
@@ -59,23 +59,22 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// 모든 경로에 대해 index.html 제공
+// 정적 파일 제공
+app.use(express.static(publicPath));
+
+// 기본 라우트
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// Catch-all 라우트
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'), err => {
-        if (err) {
-            console.error('Send File Error:', err);
-            res.status(500).send('Error loading index.html');
-        }
-    });
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
-    console.log('정적 파일 경로:', path.join(__dirname, 'public'));
-    
-    // 파일 존재 여부 확인
-    const publicPath = path.join(__dirname, 'public');
-    const files = require('fs').readdirSync(publicPath);
-    console.log('public 폴더 내용:', files);
+    console.log('정적 파일 경로:', publicPath);
+    console.log('파일 목록:', require('fs').readdirSync(publicPath));
 });
