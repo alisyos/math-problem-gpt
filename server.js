@@ -1,32 +1,43 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const OpenAI = require('openai');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-
-// OpenAI 설정
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
 
 // 미들웨어
 app.use(cors());
 app.use(express.json());
 
 // 정적 파일 제공
-app.use('/', express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// API 라우트
+// 기본 라우트
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// API 테스트
 app.get('/api/test', (req, res) => {
     res.json({ message: '서버가 정상적으로 동작 중입니다.' });
 });
 
 // 채팅 API
 app.post('/api/chat', async (req, res) => {
+    if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ 
+            success: false, 
+            error: "OpenAI API key is not configured" 
+        });
+    }
+
     try {
+        const { OpenAI } = require('openai');
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+
         const message = req.body.message;
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
@@ -58,4 +69,5 @@ app.post('/api/chat', async (req, res) => {
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
+    console.log('정적 파일 경로:', path.join(__dirname, 'public'));
 });
