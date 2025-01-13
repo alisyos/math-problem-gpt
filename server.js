@@ -22,14 +22,23 @@ app.use(express.static('public'));
 
 // API 테스트
 app.get('/api/test', (req, res) => {
-    const publicFiles = fs.readdirSync('public');
-    const srcFiles = fs.readdirSync('src');
-    res.json({ 
-        message: '서버가 정상적으로 동작 중입니다.',
-        publicFiles,
-        srcFiles,
-        cwd: process.cwd()
-    });
+    try {
+        const publicFiles = fs.readdirSync('public');
+        const srcFiles = fs.readdirSync('src');
+        res.json({ 
+            message: '서버가 정상적으로 동작 중입니다.',
+            publicFiles,
+            srcFiles,
+            cwd: process.cwd(),
+            publicExists: fs.existsSync('public'),
+            srcExists: fs.existsSync('src')
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message,
+            stack: error.stack
+        });
+    }
 });
 
 // 채팅 API
@@ -65,13 +74,22 @@ app.post('/api/chat', async (req, res) => {
 
 // 모든 요청을 index.html로 라우팅
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (fs.existsSync(path.join(__dirname, 'public', 'index.html'))) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.status(404).send('index.html not found. Files in public: ' + 
+            fs.readdirSync('public').join(', '));
+    }
 });
 
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
     console.log('작업 디렉토리:', process.cwd());
-    console.log('public 파일:', fs.readdirSync('public'));
-    console.log('src 파일:', fs.readdirSync('src'));
+    try {
+        console.log('public 파일:', fs.readdirSync('public'));
+        console.log('src 파일:', fs.readdirSync('src'));
+    } catch (error) {
+        console.error('파일 시스템 에러:', error);
+    }
 });
