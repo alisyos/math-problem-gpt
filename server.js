@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const OpenAI = require('openai');
-const fs = require('fs');
+const fs = require('fs-extra');
 require('dotenv').config();
 
 const app = express();
@@ -17,21 +17,18 @@ const openai = new OpenAI({
 app.use(cors());
 app.use(express.json());
 
-// 정적 파일 제공
-app.use(express.static('public'));
+// 정적 파일 경로 설정
+const publicPath = path.join(__dirname, 'public');
 
 // API 테스트
 app.get('/api/test', (req, res) => {
     try {
-        const publicFiles = fs.readdirSync('public');
-        const srcFiles = fs.readdirSync('src');
+        const files = fs.readdirSync(publicPath);
         res.json({ 
             message: '서버가 정상적으로 동작 중입니다.',
-            publicFiles,
-            srcFiles,
-            cwd: process.cwd(),
-            publicExists: fs.existsSync('public'),
-            srcExists: fs.existsSync('src')
+            publicPath,
+            files,
+            indexExists: fs.existsSync(path.join(publicPath, 'index.html'))
         });
     } catch (error) {
         res.status(500).json({
@@ -72,23 +69,45 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// 모든 요청을 index.html로 라우팅
-app.get('*', (req, res) => {
-    if (fs.existsSync(path.join(__dirname, 'public', 'index.html'))) {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    } else {
-        res.status(404).send('index.html not found. Files in public: ' + 
-            fs.readdirSync('public').join(', '));
+// 정적 파일 제공
+app.use('/', express.static(publicPath));
+
+// 기본 라우트
+app.get('/', async (req, res) => {
+    try {
+        const indexPath = path.join(publicPath, 'index.html');
+        if (await fs.exists(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).send(`index.html not found at ${indexPath}`);
+        }
+    } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
+    }
+});
+
+// Catch-all 라우트
+app.get('*', async (req, res) => {
+    try {
+        const indexPath = path.join(publicPath, 'index.html');
+        if (await fs.exists(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).send(`index.html not found at ${indexPath}`);
+        }
+    } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
     }
 });
 
 // 서버 시작
 app.listen(port, () => {
     console.log(`서버가 포트 ${port}에서 실행 중입니다.`);
-    console.log('작업 디렉토리:', process.cwd());
+    console.log('정적 파일 경로:', publicPath);
     try {
-        console.log('public 파일:', fs.readdirSync('public'));
-        console.log('src 파일:', fs.readdirSync('src'));
+        const files = fs.readdirSync(publicPath);
+        console.log('public 폴더 내용:', files);
+        console.log('index.html 존재:', fs.existsSync(path.join(publicPath, 'index.html')));
     } catch (error) {
         console.error('파일 시스템 에러:', error);
     }
