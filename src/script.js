@@ -1,103 +1,92 @@
 document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input');
-    const chatMessages = document.getElementById('chat-messages');
     const sendButton = document.getElementById('send-button');
+    const chatMessages = document.getElementById('chat-messages');
     const fileInput = document.getElementById('file-input');
     const uploadButton = document.getElementById('upload-button');
 
-    // API URL 설정 (현재 도메인 사용)
-    const API_URL = '';  // 빈 문자열로 설정하여 상대 경로 사용
-
-    // 메시지 표시 함수
-    const appendMessage = (content, isUser) => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
-        messageDiv.textContent = content;
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    };
-
     // 메시지 전송 함수
-    const sendMessage = async () => {
-        const message = messageInput.value.trim();
-        if (!message) return;
-
+    async function sendMessage(message) {
         try {
-            appendMessage(message, true);
-            messageInput.value = '';
-
-            const response = await fetch(`${API_URL}/api/chat`, {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ message })
             });
 
-            const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.error || '서버 에러');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            appendMessage(data.response, false);
-
+            const data = await response.json();
+            return data.response;
         } catch (error) {
-            console.error('에러:', error);
-            appendMessage(`Error: ${error.message}`, false);
+            console.error('Error:', error);
+            return '죄송합니다. 오류가 발생했습니다.';
         }
-    };
+    }
 
-    // 파일 업로드 함수
-    const uploadFile = async () => {
-        const file = fileInput.files[0];
-        if (!file) {
-            alert('파일을 선택해주세요.');
+    // 메시지 표시 함수
+    function displayMessage(message, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 전송 버튼 클릭 이벤트
+    sendButton.addEventListener('click', async () => {
+        const message = messageInput.value.trim();
+        if (message) {
+            displayMessage(message, true);
+            messageInput.value = '';
+            const response = await sendMessage(message);
+            displayMessage(response);
+        }
+    });
+
+    // 엔터 키 이벤트
+    messageInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendButton.click();
+        }
+    });
+
+    // 파일 업로드 이벤트
+    uploadButton.addEventListener('click', async () => {
+        if (!fileInput.files.length) {
+            displayMessage('파일을 선택해주세요.', false);
             return;
         }
 
-        try {
-            appendMessage('파일 분석 중...', false);
-            
-            const formData = new FormData();
-            formData.append('file', file);
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
 
-            const response = await fetch(`${API_URL}/api/upload`, {
+        try {
+            displayMessage(`파일 "${file.name}" 분석 중...`, false);
+            
+            const response = await fetch('/api/analyze', {
                 method: 'POST',
                 body: formData
             });
 
-            const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.error || '파일 분석 실패');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            appendMessage(data.response, false);
-            fileInput.value = '';
-
+            const result = await response.json();
+            displayMessage(result.response);
         } catch (error) {
-            console.error('파일 업로드 에러:', error);
-            appendMessage(`Error: ${error.message}`, false);
+            console.error('Error:', error);
+            displayMessage('파일 처리 중 오류가 발생했습니다.');
         }
-    };
 
-    // 이벤트 리스너
-    sendButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
+        // 파일 입력 초기화
+        fileInput.value = '';
     });
-    uploadButton.addEventListener('click', uploadFile);
-
-    // 서버 연결 테스트
-    fetch(`${API_URL}/api/test`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('서버 테스트 성공:', data);
-            appendMessage('서버에 연결되었습니다.', false);
-        })
-        .catch(error => {
-            console.error('서버 테스트 실패:', error);
-            appendMessage('서버 연결 실패', false);
-        });
 });

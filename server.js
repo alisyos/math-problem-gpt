@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const OpenAI = require('openai');
 require('dotenv').config();
+const multer = require('multer');
 
 const app = express();
 const port = process.env.PORT || 10000;
@@ -34,6 +35,30 @@ app.post('/api/chat', async (req, res) => {
         res.json({ success: true, response: completion.choices[0].message.content });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 파일 분석 API
+app.post('/api/analyze', multer({ dest: 'uploads/' }).single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '파일이 없습니다.' 
+            });
+        }
+
+        // 파일 처리 로직
+        res.json({ 
+            success: true, 
+            response: `파일 "${req.file.originalname}"이(가) 업로드되었습니다.` 
+        });
+    } catch (error) {
+        console.error('File Analysis Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 
